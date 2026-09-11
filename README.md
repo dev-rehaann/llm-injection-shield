@@ -5,7 +5,7 @@ NLP semester project: classify prompts as **benign** or **malicious**
 
 ## Status
 
-Step 2: dataset downloader and class balance reporting. No model code has been added.
+Step 3: shared preprocessing and clean train/validation/test splits. No model code has been added.
 
 ## Planned approaches
 
@@ -100,6 +100,33 @@ Run the offline regression check from the project root:
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests
 ```
+
+## Shared preprocessing
+
+Run after downloading the dataset:
+
+```powershell
+.\.venv\Scripts\python.exe -m src.preprocess
+```
+
+This writes shared `train.jsonl`, `val.jsonl`, and `test.jsonl` files under
+`data/processed/`, plus excluded rows and metadata. Validation is a stratified
+20% of the deduplicated training pool, using seed 42.
+
+Each row provides `raw_text` for the transformer, `tokens` for the LSTM, and
+`clean_text` for TF-IDF, alongside its label and original source identifier.
+Raw input files remain unchanged. All three models must use these same splits.
+
+```python
+import pandas as pd
+from src.preprocess import preprocess_text
+
+train = pd.read_json("data/processed/train.jsonl", lines=True)
+views = preprocess_text("Do NOT ignore the system instructions!")
+```
+
+See [the preprocessing report](reports/preprocessing.md) for tokenization rules,
+stopword choices, duplicate/conflict handling, split counts, and verification.
 
 ## Training, evaluation, and demo
 
