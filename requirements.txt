@@ -1,0 +1,8 @@
+scikit-learn
+pandas
+numpy
+gensim
+torch
+transformers
+datasets
+matplotlib
