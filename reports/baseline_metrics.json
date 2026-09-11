@@ -1,0 +1,51 @@
+{
+  "accuracy": 0.9912152269399708,
+  "precision": 0.9921875,
+  "recall": 0.9799382716049383,
+  "f1": 0.9860248447204969,
+  "confusion_matrix": [
+    [
+      1396,
+      5
+    ],
+    [
+      13,
+      635
+    ]
+  ],
+  "model": "tfidf_logistic_regression",
+  "evaluation_split": "test",
+  "positive_label": 1,
+  "label_mapping": {
+    "0": "benign",
+    "1": "malicious"
+  },
+  "confusion_matrix_layout": "rows=true, columns=predicted; labels=[0,1]; [[TN,FP],[FN,TP]]",
+  "train_samples": 6466,
+  "test_samples": 2049,
+  "vocabulary_size": 186155,
+  "hyperparameters": {
+    "ngram_range": [
+      1,
+      2
+    ],
+    "C": 1.0,
+    "solver": "lbfgs",
+    "class_weight": "balanced",
+    "max_iter": 1000,
+    "random_state": 42
+  },
+  "input_column": "clean_text",
+  "data_sha256": {
+    "train": "d8d1c3621046830e3679f153df4c07c88af4f649da8745fa1ecd6fc6c6c2f9c4",
+    "test": "f38aa0d87a1c4ed7d9520061990fe9841a422a6e240cf4099f5a8ae5ead53301"
+  },
+  "versions": {
+    "python": "3.13.7",
+    "scikit-learn": "1.9.0",
+    "numpy": "2.4.6",
+    "scipy": "1.18.0",
+    "pandas": "3.0.3"
+  },
+  "model_sha256": "0ccea0f235f7a0fbcbacaa0e87f93f0a35b9d0947b8eb83824469ecdba7468a4"
+}

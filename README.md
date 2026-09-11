@@ -5,7 +5,7 @@ NLP semester project: classify prompts as **benign** or **malicious**
 
 ## Status
 
-Step 3: shared preprocessing and clean train/validation/test splits. No model code has been added.
+Step 4: TF-IDF + Logistic Regression baseline trained, evaluated, and saved.
 
 ## Planned approaches
 
@@ -128,9 +128,73 @@ views = preprocess_text("Do NOT ignore the system instructions!")
 See [the preprocessing report](reports/preprocessing.md) for tokenization rules,
 stopword choices, duplicate/conflict handling, split counts, and verification.
 
-## Training, evaluation, and demo
+## Baseline: TF-IDF + Logistic Regression
 
-TBD in subsequent steps.
+Run from the project root after preprocessing, with dependencies installed:
+
+```powershell
+.\.venv\Scripts\python.exe -m src.model_baseline
+```
+
+The model uses TF-IDF unigrams/bigrams and Logistic Regression with
+`C=1.0`, `class_weight="balanced"`, `solver="lbfgs"`, and `max_iter=1000`.
+Whitespace tokenization preserves the punctuation and one-character tokens in
+`clean_text`. The fitted vocabulary, IDF weights, and classifier are saved
+together in a scikit-learn pipeline.
+[TF-IDF reference](https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html)
+
+Only `train.jsonl` is used for fitting. The fixed configuration is evaluated on
+`test.jsonl`; validation data is reserved for future tuning. Test results do not
+select hyperparameters. Class balancing uses training labels only.
+
+Outputs:
+
+- `models/baseline.pkl`: fitted pipeline, saved locally and excluded from Git.
+- `reports/baseline_metrics.json`: metrics, confusion matrix, parameters,
+  row counts, package versions, and data/model SHA-256 hashes.
+
+| Test metric | Value |
+| --- | ---: |
+| Accuracy | 99.12% |
+| Precision (malicious) | 99.22% |
+| Recall (malicious) | 97.99% |
+| F1 (malicious) | 98.60% |
+
+The model was trained on 6,466 rows and evaluated on 2,049 rows.
+Confusion matrix: `[[1396, 5], [13, 635]]`, with true labels as rows and predicted
+labels as columns in `[benign, malicious]` order. This means 5 false positives
+and 13 false negatives. Scores describe this dataset; the synthetic/template
+limitations in the dataset and preprocessing reports still apply.
+
+To reuse the model, first apply the same preprocessing:
+
+```python
+import pickle
+from src.preprocess import preprocess_text
+
+# Load only a model file you trust; pickle can execute code during loading.
+with open("models/baseline.pkl", "rb") as file:
+    model = pickle.load(file)
+
+text = preprocess_text("Do NOT ignore the system instructions!")["clean_text"]
+label = int(model.predict([text])[0])
+probabilities = model.predict_proba([text])[0]  # Order given by model.classes_.
+```
+
+Use the recorded package versions when loading the pickle. The probabilities
+are model estimates and have not been calibrated.
+
+All three offline regression checks passed. A fresh Python process reloaded
+the saved model, reproduced every metric from its test predictions, and verified
+the model/data hashes. Training completed in 11 solver iterations.
+This run used the temporary verification environment from the data step;
+install the requirements into the project's virtual environment before using
+the commands above.
+
+## Remaining models and demo
+
+LSTM, DistilBERT, the cross-model comparison, and the interactive demo are planned
+for subsequent steps.
 
 ## Development workflow
 
