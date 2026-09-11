@@ -5,7 +5,7 @@ NLP semester project: classify prompts as **benign** or **malicious**
 
 ## Status
 
-Step 1: project skeleton only. No model code has been added.
+Step 2: dataset downloader and class balance reporting. No model code has been added.
 
 ## Planned approaches
 
@@ -24,7 +24,8 @@ llm-injection-shield/
 ├── data/              # Downloaded datasets and processed data
 ├── src/               # Preprocessing, training, evaluation, and demo code
 ├── models/            # Saved trained models and related artifacts
-├── reports/           # Evaluation tables and charts
+├── reports/           # Dataset notes, evaluation tables, and charts
+├── tests/             # Offline regression check
 ├── .gitignore
 ├── requirements.txt
 ├── setup_env.py
@@ -60,8 +61,45 @@ training environment is validated.
 
 ## Dataset
 
-TBD: confirm the Hugging Face dataset name, label mapping, and
-train/validation/test split in the data step.
+Selected: [xTRam1/safe-guard-prompt-injection](https://huggingface.co/datasets/xTRam1/safe-guard-prompt-injection).
+See [the dataset comparison](reports/dataset_selection.md) for alternatives and limitations.
+
+From the project root, with dependencies installed:
+
+```powershell
+.\.venv\Scripts\python.exe src/data_loader.py
+```
+
+On macOS/Linux, use `.venv/bin/python src/data_loader.py`.
+
+For this data step alone, `python -m pip install datasets pandas` is sufficient
+when run with the virtual environment's Python.
+
+The loader downloads a pinned revision and writes:
+
+- `data/raw/train.csv`
+- `data/raw/test.csv`
+- `data/raw/metadata.json` (source revision, label mapping, and class counts)
+
+It prints benign/malicious counts for each split and the total.
+Labels remain `0 = benign` and `1 = malicious`. Original text and split
+membership are preserved. Paths are resolved relative to the project, so the
+script also works when launched from another directory. Re-running refreshes
+the same files from the same revision, using Hugging Face's download cache.
+
+To read a local split without interpreting prompt strings such as "NA" as missing:
+
+```python
+import pandas as pd
+
+train = pd.read_csv("data/raw/train.csv", keep_default_na=False)
+```
+
+Run the offline regression check from the project root:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover -s tests
+```
 
 ## Training, evaluation, and demo
 
