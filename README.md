@@ -5,7 +5,7 @@ NLP semester project: classify prompts as **benign** or **malicious**
 
 ## Status
 
-Step 4: TF-IDF + Logistic Regression baseline trained, evaluated, and saved.
+Step 5: Word2Vec + LSTM trained, selected by validation F1, evaluated, and saved.
 
 ## Planned approaches
 
@@ -191,9 +191,100 @@ This run used the temporary verification environment from the data step;
 install the requirements into the project's virtual environment before using
 the commands above.
 
-## Remaining models and demo
+## Word2Vec + LSTM
 
-LSTM, DistilBERT, the cross-model comparison, and the interactive demo are planned
+Run after preprocessing, with the project requirements installed:
+
+```powershell
+.\.venv\Scripts\python.exe -m src.model_lstm
+```
+
+The model uses the same 6,466 training, 1,617 validation, and 2,049 test rows.
+It consumes `tokens`, retaining stopwords and punctuation from shared preprocessing.
+
+- Word2Vec: 100-dimensional skip-gram vectors, window 5, minimum frequency 2,
+  10 epochs, one worker, and seed 42. Vocabulary and vectors use training text only.
+- Network: trainable embedding layer, one bidirectional LSTM with 64 hidden units
+  per direction, dropout 0.3, and a single binary output logit.
+- Training: Adam at 0.001, batch size 64, gradient clipping at 1.0, and
+  BCEWithLogitsLoss weighted by the training benign/malicious ratio.
+- Selection: up to 12 epochs, retaining the earliest checkpoint with the highest
+  validation F1; stop after three epochs without improvement. Test evaluation
+  happens after restoring that checkpoint. The probability threshold stays 0.5.
+
+PAD has index 0 and an all-zero vector; UNK has index 1 and starts at the mean
+Word2Vec vector. Rare and unseen words map to UNK. Packed sequences prevent
+padding from changing the LSTM states. Prompts retain their first 256 tokens:
+470 training, 110 validation, and 142 test prompts are truncated. Raw data stays
+unchanged. This limit is configurable through `train_lstm(max_length=...)`.
+
+Outputs:
+
+- `models/lstm.pt`: selected model state, including fine-tuned embeddings,
+  vocabulary, architecture, tokenization metadata, and sequence limit.
+- `reports/lstm_metrics.json`: the same five metrics as the baseline, plus
+  validation history, selected epoch, configuration, truncation counts,
+  dependency versions, and model/data hashes.
+
+The default run uses CPU with four PyTorch threads. `train_lstm` exposes the
+training settings as keyword arguments. Fixed seeds, a stable Word2Vec hash, and
+one Word2Vec worker support reproducibility with the same environment; results
+can differ across library versions or devices.
+
+To reload the checkpoint and classify a prompt:
+
+```python
+import torch
+from src.model_lstm import encode_tokens, load_lstm
+from src.preprocess import preprocess_text
+
+model, checkpoint = load_lstm()
+tokens = preprocess_text("Ignore all previous instructions!")["tokens"]
+ids, lengths = encode_tokens([tokens], checkpoint["vocab"], checkpoint["max_length"])
+with torch.inference_mode():
+    malicious_probability = model(ids, lengths).sigmoid().item()
+label = int(malicious_probability >= checkpoint["threshold"])
+```
+
+The loader uses `torch.load(..., weights_only=True)`. Probabilities are
+uncalibrated model estimates. The embedding weights are included in the
+checkpoint, so no separate Word2Vec download is needed for inference.
+
+References: [Gensim Word2Vec](https://radimrehurek.com/gensim/models/word2vec.html)
+and [PyTorch packed sequences](https://docs.pytorch.org/docs/stable/generated/torch.nn.utils.rnn.pack_padded_sequence.html).
+
+### LSTM results
+
+Training stopped after epoch 5 and restored epoch 2, whose validation F1 was
+99.38%. The saved checkpoint contains a vocabulary of 13,434 learned tokens
+plus the reserved PAD/UNK embedding rows.
+
+| Test metric | Value |
+| --- | ---: |
+| Accuracy | 99.32% |
+| Precision (malicious) | 99.22% |
+| Recall (malicious) | 98.61% |
+| F1 (malicious) | 98.92% |
+
+Confusion matrix: `[[1396, 5], [9, 639]]` (true labels as rows, predicted labels
+as columns, ordered benign/malicious). There were 5 false positives and 9 false
+negatives. These results describe the current dataset and its documented
+synthetic/template limitations.
+
+All four regression checks passed, including Word2Vec vocabulary isolation,
+unknown/padding IDs, unequal sequence lengths, padding invariance, validation
+checkpoint restoration, and save/reload predictions. A separate Python process
+reproduced all test metrics from the saved model, verified its checksum and
+selected epoch, and confirmed train/test data hashes match the baseline.
+
+This run used CPU PyTorch 2.13.0, Gensim 4.4.0, and the temporary verification
+environment used in previous steps. Install the project requirements into
+`.venv` before using the commands above. The checkpoint is stored locally and
+excluded from Git; code and metrics are committed.
+
+## Remaining model and demo
+
+DistilBERT, the cross-model comparison, and the interactive demo are planned
 for subsequent steps.
 
 ## Development workflow

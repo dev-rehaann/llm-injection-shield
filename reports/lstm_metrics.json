@@ -1,0 +1,99 @@
+{
+  "accuracy": 0.9931673987310884,
+  "precision": 0.9922360248447205,
+  "recall": 0.9861111111111112,
+  "f1": 0.9891640866873065,
+  "confusion_matrix": [
+    [
+      1396,
+      5
+    ],
+    [
+      9,
+      639
+    ]
+  ],
+  "model": "word2vec_bilstm",
+  "evaluation_split": "test",
+  "positive_label": 1,
+  "label_mapping": {
+    "0": "benign",
+    "1": "malicious"
+  },
+  "threshold": 0.5,
+  "confusion_matrix_layout": "rows=true, columns=predicted; labels=[0,1]; [[TN,FP],[FN,TP]]",
+  "train_samples": 6466,
+  "val_samples": 1617,
+  "test_samples": 2049,
+  "vocabulary_size": 13434,
+  "best_epoch": 2,
+  "best_val_f1": 0.9938144329896907,
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.3215891436863537,
+      "val_f1": 0.9785056294779939
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.061307226993002985,
+      "val_f1": 0.9938144329896907
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.029049947370446357,
+      "val_f1": 0.9907312049433573
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.015698095737122365,
+      "val_f1": 0.9896694214876033
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.010230674050020113,
+      "val_f1": 0.9928057553956835
+    }
+  ],
+  "hyperparameters": {
+    "embedding_dim": 100,
+    "hidden_dim": 64,
+    "bidirectional": true,
+    "dropout": 0.3,
+    "max_length": 256,
+    "batch_size": 64,
+    "epochs": 12,
+    "patience": 3,
+    "learning_rate": 0.001,
+    "word2vec_epochs": 10,
+    "min_count": 2,
+    "word2vec_window": 5,
+    "word2vec_sg": 1,
+    "word2vec_workers": 1,
+    "trainable_embeddings": true,
+    "seed": 42,
+    "device": "cpu",
+    "cpu_threads": 4,
+    "positive_weight": 2.3398760330578514,
+    "gradient_clip_norm": 1.0
+  },
+  "versions": {
+    "python": "3.13.7",
+    "torch": "2.13.0",
+    "gensim": "4.4.0",
+    "numpy": "2.4.6",
+    "scikit-learn": "1.9.0"
+  },
+  "data_sha256": {
+    "train": "d8d1c3621046830e3679f153df4c07c88af4f649da8745fa1ecd6fc6c6c2f9c4",
+    "val": "fcf8d2c92df490fe5680256c3bb8d0b8de8548796ee86446916e365f79bf6cda",
+    "test": "f38aa0d87a1c4ed7d9520061990fe9841a422a6e240cf4099f5a8ae5ead53301"
+  },
+  "input_column": "tokens",
+  "truncated_samples": {
+    "train": 470,
+    "val": 110,
+    "test": 142
+  },
+  "model_sha256": "dc1b4f8c7bff6127b13b05b8f424484cc68c92281a491ebecbf471dca2f50bbd"
+}
