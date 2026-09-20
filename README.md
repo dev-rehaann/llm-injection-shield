@@ -5,7 +5,7 @@ NLP semester project: classify prompts as **benign** or **malicious**
 
 ## Status
 
-Step 6: DistilBERT fine-tuned with Trainer, selected by validation F1, evaluated, and saved.
+Step 7: all three models trained and evaluated; comparison table and chart generated.
 
 ## Approaches
 
@@ -14,7 +14,7 @@ Step 6: DistilBERT fine-tuned with Trainer, selected by validation F1, evaluated
 3. Fine-tuned DistilBERT using Hugging Face Transformers.
 
 All three models reuse a shared data preprocessing pipeline.
-Evaluation will compare Accuracy, Precision, Recall, and F1 in a table/chart.
+Evaluation compares Accuracy, Precision, Recall, and F1 in a table, with an accuracy/F1 chart.
 A CLI or minimal web demo will return a predicted label and confidence score.
 
 ## Folder structure
@@ -386,9 +386,27 @@ into the project's `.venv` before using the commands above. Model weights,
 tokenizer files, caches, and checkpoints stay local under `models/` and are
 excluded from Git. Source code, tests, documentation, and metrics are committed.
 
-## Remaining evaluation and demo
+## Model comparison
 
-The cross-model comparison and interactive demo are planned for subsequent steps.
+Regenerate the comparison from the three saved test-metrics JSON files:
+
+```powershell
+.\.venv\Scripts\python.exe -m src.compare_models
+```
+
+- [Comparison table](reports/comparison.md): accuracy, precision, recall, and F1.
+- [Comparison chart](reports/comparison_chart.png): accuracy and malicious-class
+  F1 shown side by side for each model.
+
+The script validates the scores, positive label, test sample count, and test
+split hash before replacing the outputs. It reads reports only, so training
+and model loading are not needed. Run it again after regenerating model metrics.
+The offline comparison check covers table values, PNG output, invalid scores,
+and mismatched test splits.
+
+## Remaining demo
+
+The interactive prediction demo is planned for the next step.
 
 
 ## Development workflow
