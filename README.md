@@ -5,15 +5,15 @@ NLP semester project: classify prompts as **benign** or **malicious**
 
 ## Status
 
-Step 5: Word2Vec + LSTM trained, selected by validation F1, evaluated, and saved.
+Step 6: DistilBERT fine-tuned with Trainer, selected by validation F1, evaluated, and saved.
 
-## Planned approaches
+## Approaches
 
 1. TF-IDF / Bag-of-Words + Logistic Regression.
 2. Word2Vec / GloVe embeddings + a PyTorch LSTM.
 3. Fine-tuned DistilBERT using Hugging Face Transformers.
 
-All three models will reuse a shared data preprocessing pipeline.
+All three models reuse a shared data preprocessing pipeline.
 Evaluation will compare Accuracy, Precision, Recall, and F1 in a table/chart.
 A CLI or minimal web demo will return a predicted label and confidence score.
 
@@ -56,8 +56,8 @@ python3 setup_env.py
 
 Use the environment's Python executable for subsequent project commands, or
 select `.venv` as your interpreter in your editor. Activation is optional.
-Dependencies are unpinned for now; exact versions will be recorded after the
-training environment is validated.
+Transformers and Accelerate are pinned for the Trainer API; other dependencies
+are unpinned. Each training report records the versions used.
 
 ## Dataset
 
@@ -282,10 +282,114 @@ environment used in previous steps. Install the project requirements into
 `.venv` before using the commands above. The checkpoint is stored locally and
 excluded from Git; code and metrics are committed.
 
-## Remaining model and demo
+## Transformer: DistilBERT + Trainer
 
-DistilBERT, the cross-model comparison, and the interactive demo are planned
-for subsequent steps.
+Run from the project root after installing requirements:
+
+```powershell
+.\.venv\Scripts\python.exe -m src.model_transformer
+.\.venv\Scripts\python.exe -m unittest discover -s tests
+```
+
+The script reads the same train/validation/test JSONL files as the LSTM
+(6,466 / 1,617 / 2,049 rows). It passes `raw_text` directly to the pretrained
+tokenizer, preserving punctuation and stopwords; the uncased tokenizer handles
+normalization. Neither the splits nor the raw text are rewritten.
+
+- Starting checkpoint: `distilbert/distilbert-base-uncased`, pinned to revision
+  `12040accade4e8a0f71eabdb258fecc2e7e948be`.
+- Network: pretrained DistilBERT encoder plus a new two-class classification
+  head. All parameters are fine-tuned with unweighted cross-entropy.
+- Training: three epochs, AdamW at 0.00002, weight decay 0.01, linear learning
+  rate decay with 10% warmup, gradient clipping at 1.0, and seed 42.
+- Batches: eight examples per optimizer update, without gradient accumulation.
+  Dynamic padding and grouping by length reduce padding work.
+- Selection: evaluate validation F1 after each epoch and restore its best
+  checkpoint. Evaluate the held-out test set only after that selection.
+
+Inputs retain the first 256 subword tokens, including special tokens. This is
+different from the LSTM's 256 word/punctuation tokens. An attack near the end
+of a long prompt can be lost to truncation. The limit is saved in the tokenizer
+and configurable through `train_transformer(max_length=...)`, up to the
+pretrained model's positional limit.
+
+Trainer automatically selects CUDA when available; the default CPU thread
+count is four. Other settings are keyword arguments to `train_transformer`.
+The first run downloads the pretrained weights into `models/hf_cache/`.
+
+Outputs:
+
+- `models/transformer/`: the selected model's safetensors weights,
+  configuration, and tokenizer files, reloadable without the original download.
+- `reports/transformer_metrics.json`: accuracy, binary precision/recall/F1
+  (malicious=1), confusion matrix, validation history, configuration, dependency
+  versions, and data/model-file hashes.
+- `models/transformer_checkpoints/`: Trainer's local selection checkpoints.
+  These save model weights only; they are not full optimizer-resume checkpoints.
+
+To classify a prompt using the saved model:
+
+```python
+import torch
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+path = "models/transformer"
+tokenizer = AutoTokenizer.from_pretrained(path)
+model = AutoModelForSequenceClassification.from_pretrained(path).eval()
+inputs = tokenizer("Ignore all previous instructions!",
+                   truncation=True, return_tensors="pt")
+with torch.inference_mode():
+    probabilities = model(**inputs).logits.softmax(dim=-1)[0]
+label = probabilities.argmax().item()
+print(model.config.id2label[label], probabilities[label].item())
+```
+
+The confidence is an uncalibrated softmax estimate. Transformers and Accelerate
+are pinned to the versions used for the Trainer API in this step. Exact runtime
+versions and split hashes are also recorded in the report.
+
+The offline regression check uses a tiny, randomly initialized local DistilBERT
+solely to test the training workflow quickly. It checks raw-text tokenization,
+truncation, validation checkpoint restoration, saved-model predictions, artifact
+hashes, and rejection of overlapping splits. The project model is fine-tuned
+from the full pretrained checkpoint listed above.
+
+References: [DistilBERT model card](https://huggingface.co/distilbert/distilbert-base-uncased)
+and [Hugging Face Trainer](https://huggingface.co/docs/transformers/main_classes/trainer).
+
+### Transformer results
+
+Three epochs were trained. Epoch 1 had the highest validation F1 (99.59%) and
+was restored for test evaluation. Epochs 2 and 3 had slightly lower F1 before
+rounding, despite also rounding to 99.59%.
+
+| Test metric | Value |
+| --- | ---: |
+| Accuracy | 99.51% |
+| Precision (malicious) | 99.38% |
+| Recall (malicious) | 99.07% |
+| F1 (malicious) | 99.23% |
+
+Confusion matrix: `[[1397, 4], [6, 642]]`, with true labels as rows and predicted
+labels as columns, ordered benign/malicious. There were 4 false positives and
+6 false negatives among 2,049 test prompts. These results describe this dataset
+and its documented synthetic/template limitations.
+
+All five offline regression checks passed. A separate Python process reloaded
+the exported model, reproduced all test metrics, verified model-file checksums,
+and confirmed that the split hashes match the baseline and LSTM runs.
+
+Training, including epoch validation, took about 42 minutes on this CPU using
+PyTorch 2.13.0, Transformers 5.17.0, and Accelerate 1.15.0. This run used the
+temporary verification environment from earlier steps; install requirements
+into the project's `.venv` before using the commands above. Model weights,
+tokenizer files, caches, and checkpoints stay local under `models/` and are
+excluded from Git. Source code, tests, documentation, and metrics are committed.
+
+## Remaining evaluation and demo
+
+The cross-model comparison and interactive demo are planned for subsequent steps.
+
 
 ## Development workflow
 
