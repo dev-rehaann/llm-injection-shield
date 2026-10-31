@@ -6,6 +6,10 @@
 
 This project compares three approaches to detecting prompt injection and jailbreak attempts: TF-IDF with Logistic Regression, Word2Vec with a bidirectional LSTM, and fine-tuned DistilBERT. A shared preprocessing pipeline produces aligned training, validation, and test sets while preserving the text representation each model needs. On the same held-out set of 2,049 prompts, the models achieved malicious-class F1 scores of **98.60%, 98.92%, and 99.23%**, respectively. The repository includes modular training scripts, evaluation reports, a comparison chart, and an interactive command-line demonstration.
 
+## Course-outline alignment
+
+This project follows the course's applied sequence from text preprocessing and TF-IDF classification through word embeddings, LSTMs, and encoder-transformer fine-tuning. The [course-outline alignment report](reports/course_alignment.md) maps the relevant teaching weeks to implementation evidence, identifies topics outside this binary-classification scope, and provides a short presentation plan with ethical and error-analysis points.
+
 ## 1. Problem statement
 
 Prompt injection attempts to redirect an LLM away from its intended instructions, while jailbreak attempts seek to bypass its behavioral restrictions. This project treats detection as supervised binary text classification:
