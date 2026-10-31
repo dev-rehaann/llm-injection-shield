@@ -144,7 +144,8 @@ llm-injection-shield/
 |   |-- model_lstm.py
 |   |-- model_transformer.py
 |   |-- compare_models.py
-|   +-- demo.py
+|   |-- demo.py
+|   +-- gui.py
 |-- models/                      # Saved models and transformer checkpoints/cache
 |-- reports/                     # Metrics, comparison chart, and methodology notes
 |-- tests/                       # Data, training, comparison, and demo checks
@@ -177,7 +178,7 @@ python setup_env.py
 
 `setup_env.py` creates `.venv`; it does not install the project requirements. On macOS/Linux, use `python3 setup_env.py` and replace `.\.venv\Scripts\python.exe` with `.venv/bin/python` in subsequent commands.
 
-The recorded experiments used Python 3.13.7 and CPU execution. Core libraries are scikit-learn, pandas, NumPy, Gensim, PyTorch, Transformers, Datasets, Matplotlib, and Accelerate. Transformers 5.17.0 and Accelerate 1.15.0 are pinned in `requirements.txt`; other recorded versions are in the metrics JSON files. Those other dependencies are not locked, so package or hardware changes can affect reproducibility. The existing runs were verified in a separate environment; install requirements into the project environment before running these commands.
+The recorded experiments used Python 3.13.7 and CPU execution. Core libraries are scikit-learn, pandas, NumPy, Gensim, PyTorch, Transformers, Datasets, Matplotlib, and Accelerate. Scikit-learn 1.9.0, Transformers 5.17.0, and Accelerate 1.15.0 are pinned in `requirements.txt`; other recorded versions are in the metrics JSON files. Those other dependencies are not locked, so package or hardware changes can affect reproducibility. The existing runs were verified in a separate environment; install requirements into the project environment before running these commands.
 
 ### Download and preprocess
 
@@ -238,6 +239,18 @@ For a single prediction:
 ```
 
 Model choices are `all`, `baseline`, `lstm`, and `transformer`. Each result shows `benign` or `malicious` and the estimated probability of that predicted label. The demo reports neural input truncation and model agreement/disagreement. It loads local artifacts once, runs on CPU, and needs no network connection after training. A missing artifact produces the corresponding training command.
+
+### Run the desktop GUI
+
+After installing dependencies and training the selected models, open the graphical interface:
+
+```powershell
+.\.venv\Scripts\python.exe -m src.gui
+```
+
+Paste a prompt, choose **All three models** or a single model, and click **Classify prompt**. The window shows each prediction and confidence score, plus model agreement and truncation notices. Two example buttons fill the prompt box for a quick demonstration. Models are loaded from `models/` on first use and reused for later prompts. The prompt and controls pause during classification so the displayed result always matches the visible input.
+
+On Windows, `.\.venv\Scripts\pythonw.exe -m src.gui` opens the GUI without a terminal window. If the window does not open, run the `python.exe` command above to see the error. Tkinter is included with most Python installations; if yours omits it, install your Python distribution's Tk support.
 
 ### Run verification checks
 
